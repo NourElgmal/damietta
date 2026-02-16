@@ -26,12 +26,26 @@ router.post("/register", async (req, res) => {
       return res
         .status(400)
         .json({ error: "name, branch and password are required" });
+    // Prevent duplicate names (unique usernames)
+    const existing = await User.findOne({ name });
+    if (existing) {
+      return res.status(409).json({ error: "User name already exists" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
     const userCount = await User.countDocuments();
     const isAdmin = userCount === 0; // first user becomes admin
 
-    const user = await User.create({ name, branch, password: hashed, isAdmin });
+    let user;
+    try {
+      user = await User.create({ name, branch, password: hashed, isAdmin });
+    } catch (err) {
+      // Handle race/unique index duplicate error
+      if (err && err.code === 11000) {
+        return res.status(409).json({ error: "User name already exists" });
+      }
+      throw err;
+    }
     return res.status(201).json({
       id: user._id,
       name: user.name,
