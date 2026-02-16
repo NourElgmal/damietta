@@ -27,6 +27,14 @@ module.exports = async (req, res) => {
         .json({ error: "MONGODB_URI environment variable is not set." });
     }
 
+    // Authenticate via API Key
+    const apiKey = req.headers["x-api-key"];
+    if (apiKey !== process.env.API_KEY) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Invalid or missing API key." });
+    }
+
     const { db } = await connectToDatabase();
     const collection = db.collection("numbers");
 
