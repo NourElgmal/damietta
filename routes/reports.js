@@ -81,4 +81,8 @@ router.get("/yearly", authenticate, async (req, res) => {
     return res.json({ period: "yearly", start, data });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Server 
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+export default router;

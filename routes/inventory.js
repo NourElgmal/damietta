@@ -63,4 +63,9 @@ router.get("/:id", authenticate, async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     return res.json(doc);
   } catch (err) {
-   
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+export default router;
