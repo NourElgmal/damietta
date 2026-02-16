@@ -32,14 +32,12 @@ router.post("/register", async (req, res) => {
     const isAdmin = userCount === 0; // first user becomes admin
 
     const user = await User.create({ name, branch, password: hashed, isAdmin });
-    return res
-      .status(201)
-      .json({
-        id: user._id,
-        name: user.name,
-        branch: user.branch,
-        isAdmin: user.isAdmin,
-      });
+    return res.status(201).json({
+      id: user._id,
+      name: user.name,
+      branch: user.branch,
+      isAdmin: user.isAdmin,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Server error" });
@@ -56,6 +54,14 @@ router.post("/login", async (req, res) => {
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not set");
+      return res
+        .status(500)
+        .json({ error: "Server configuration error: JWT_SECRET not set" });
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
@@ -68,16 +74,15 @@ router.post("/login", async (req, res) => {
         isAdmin: user.isAdmin,
       },
     });
-        if (!process.env.JWT_SECRET) {
-          console.error('JWT_SECRET is not set');
-          return res.status(500).json({ error: 'Server configuration error: JWT_SECRET not set' });
-        }
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        return res.json({ token, user: { id: user._id, name: user.name, branch: user.branch, isAdmin: user.isAdmin } });
-    return res.status(500).json({ error: "Server error" });
+  } catch (err) {
+    console.error(err);
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Server error"
+        : err.message || "Server error";
+    return res.status(500).json({ error: "Server error", details: message });
   }
-        const message = process.env.NODE_ENV === 'production' ? 'Server error' : err.message || 'Server error';
-        return res.status(500).json({ error: 'Server error', details: message });
+});
 
 // Promote user to admin (Admin only)
 router.put("/:id/promote", authenticate, requireAdmin, async (req, res) => {
